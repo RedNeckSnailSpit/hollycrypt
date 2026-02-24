@@ -22,7 +22,7 @@ Real ciphers don't work this way. Hollywood doesn't care. Neither do we.
 
 ## Usage
 
-Just drop `index.html` somewhere and open it. That's it.
+Just drop `index.htm` somewhere and open it. That's it.
 
 ```bash
 git clone https://github.com/RedNeckSnailSpit/hollycrypt.git
