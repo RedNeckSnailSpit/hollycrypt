@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hollycrypt</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0a;color:#00ff00;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  h1{font-size:1.1rem;color:#00cc00;margin-bottom:8px;text-shadow:0 0 8px #00ff00}
+  .subtitle{font-size:.75rem;color:#006600;margin-bottom:30px}
+  .terminal{background:#050f05;border:1px solid #00ff00;border-radius:4px;padding:30px 40px;width:100%;max-width:680px;box-shadow:0 0 30px #00ff0033}
+  .terminal-bar{display:flex;gap:8px;margin-bottom:20px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .prompt{font-size:.85rem;margin-bottom:18px}
+  .explainer{background:#000;border:1px solid #003300;border-radius:2px;padding:14px 18px;margin-bottom:24px;font-size:.75rem;line-height:1.7}
+  .explainer strong{color:#00cc00}
+  label{font-size:.8rem;display:block;margin-bottom:6px}
+  input[type=text]{background:#000;border:1px solid;color:#00ff00;font-family:'Share Tech Mono',monospace;font-size:.85rem;padding:8px 12px;width:100%;outline:none;border-radius:2px}
+  input[type=text]:focus{box-shadow:0 0 8px rgba(0,255,0,.33)}
+  .btn{background:transparent;font-family:'Share Tech Mono',monospace;font-size:.85rem;padding:9px 20px;cursor:pointer;border-radius:2px;transition:all .2s}
+  .btn:hover{background:rgba(0,255,0,.13)}
+  .add-row{display:flex;gap:8px;margin-bottom:8px}
+  .add-row input:first-child{flex:.8}
+  .add-row input:nth-child(2){flex:1.4}
+  .fields-list{margin-bottom:12px}
+  .field-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #001a00}
+  .field-item .fi-label{min-width:100px}
+  .field-item .fi-hash{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
+  .rm{background:none;border:none;color:#ff4444;cursor:pointer;font-family:monospace;font-size:.85rem;padding:0 6px}
+  .err{color:#ff4444;font-size:.78rem;margin:6px 0}
+  .warn{font-size:.78rem;margin:8px 0;padding:6px 10px;border:1px solid #443300;background:#1a0f00;border-radius:2px}
+  .output{margin-top:24px;border-top:1px solid #003300;padding-top:18px}
+  .line{margin:4px 0;min-height:1.2em;white-space:nowrap;overflow:hidden}
+  .status{margin-top:14px}
+  .scanline{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);z-index:9}
+  .empty-note{padding:4px 0;opacity:.4}
+
+  /* Panel button */
+  #settingsBtn{position:fixed;bottom:20px;right:20px;z-index:100;border:2px solid #ffffff;color:#ffffff;background:#222222;padding:12px 18px;font-family:system-ui,-apple-system,sans-serif;font-size:1rem;font-weight:600;cursor:pointer;border-radius:4px;transition:all .2s}
+  #settingsBtn:hover{background:#333333}
+
+  /* Panel — always high contrast, never inherits site theme */
+  #settingsPanel{position:fixed;bottom:66px;right:20px;width:340px;max-width:calc(100vw - 24px);background:#1a1a1a;border:2px solid #ffffff;color:#ffffff;border-radius:6px;z-index:100;max-height:75vh;overflow:hidden;display:none;flex-direction:column;font-family:system-ui,-apple-system,sans-serif}
+  #settingsPanel.open{display:flex}
+  .panel-tabs{display:flex;border-bottom:2px solid #444;flex-shrink:0}
+  .tab{flex:1;padding:14px 8px;font-family:system-ui,-apple-system,sans-serif;font-size:1rem;font-weight:600;background:transparent;border:none;cursor:pointer;transition:all .15s;color:#888}
+  .tab:hover{color:#fff;background:#2a2a2a}
+  .tab.active{background:#2a2a2a;color:#ffffff;border-bottom:3px solid #ffffff}
+  .panel-body{overflow-y:auto;padding:16px;flex:1;color:#ffffff}
+  .panel-body h3{font-size:1rem;font-weight:700;margin-bottom:14px;color:#ffffff;font-family:system-ui,-apple-system,sans-serif}
+
+  /* Colour tab */
+  .colour-row{display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid #333;cursor:pointer;border-radius:3px}
+  .colour-row:hover,.colour-row.active{background:#2a2a2a}
+  .colour-swatch{width:20px;height:20px;border-radius:3px;flex-shrink:0;border:1px solid #555}
+  .colour-name{font-size:.95rem;flex:1;color:#ddd;font-family:system-ui,-apple-system,sans-serif}
+  .colour-hex{font-size:.8rem;color:#aaa;font-family:system-ui,-apple-system,sans-serif}
+  .slider-section{margin-top:12px;padding-top:12px;border-top:1px solid #333;display:none}
+  .slider-section h4{font-size:.95rem;font-weight:600;margin-bottom:10px;color:#fff;font-family:system-ui,-apple-system,sans-serif}
+  .slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:.95rem;color:#ccc;font-family:system-ui,-apple-system,sans-serif}
+  .slider-row span:first-child{width:14px;color:#fff;font-weight:700}
+  .slider-row input[type=range]{flex:1;accent-color:#ffffff;height:6px;cursor:pointer}
+  .slider-row .val{width:34px;text-align:right;color:#aaa}
+  .small-btn{font-size:.9rem;margin-top:8px;width:100%;padding:10px;border:1px solid #555;background:#2a2a2a;color:#fff;font-family:system-ui,-apple-system,sans-serif;cursor:pointer;border-radius:4px;font-weight:500}
+  .small-btn:hover{background:#3a3a3a;border-color:#fff}
+
+  /* Font tab */
+  .font-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #333;color:#ddd;font-family:system-ui,-apple-system,sans-serif}
+  .font-row .fr-label{flex:1;font-size:.95rem}
+  .font-controls{display:flex;align-items:center;gap:8px}
+  .font-controls .fval{width:46px;text-align:center;font-size:.9rem;color:#aaa}
+  .sz-btn{background:#2a2a2a;border:1px solid #555;color:#fff;font-family:system-ui,-apple-system,sans-serif;font-size:1.1rem;width:34px;height:34px;cursor:pointer;border-radius:4px;line-height:1;padding:0;font-weight:700}
+  .sz-btn:hover{background:#3a3a3a;border-color:#fff}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<h1>// hollycrypt</h1>
+<p class="subtitle">Decryption animation visualiser</p>
+
+<div class="terminal" id="terminal">
+  <div class="terminal-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+  <div class="prompt" id="c-prompt">root@rednecksnailspit:~$ ./reveal --demo</div>
+  <div class="explainer" id="c-explainer">
+    <strong>What is this?</strong><br>
+    A visual demo of what a decryption reveal animation could look like in a real app —
+    where data is stored encrypted at rest and only revealed to you once you've proven ownership,
+    animating from the raw encrypted/hashed value down to your actual plaintext. Add some fields below and watch the magic.
+    <br><br>
+    <a href="https://github.com/RedNeckSnailSpit/hollycrypt" target="_blank" id="c-link" style="text-decoration:none">▶ github.com/RedNeckSnailSpit/hollycrypt</a>
+  </div>
+
+  <label id="c-addlabel">Add a field:</label>
+  <div class="add-row">
+    <input type="text" id="fieldLabel" placeholder="field name" maxlength="20"/>
+    <input type="text" id="fieldValue" placeholder="plaintext value (max 30 chars)" maxlength="30"/>
+    <button class="btn" id="c-addbtn" onclick="addField()">+ ADD</button>
+  </div>
+  <div id="addErr" class="err" style="display:none"></div>
+  <div class="fields-list" id="fieldsList"></div>
+  <button class="btn" id="c-revbtn" onclick="startReveal()" style="width:100%;margin-top:4px">▶ DECRYPT &amp; REVEAL</button>
+  <div id="revealWarn" class="warn" style="display:none"></div>
+  <div class="output" id="output" style="display:none">
+    <div id="lines"></div>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<button id="settingsBtn" onclick="togglePanel()">⚙ Customise</button>
+
+<div id="settingsPanel">
+  <div class="panel-tabs">
+    <button class="tab active" id="tabColour" onclick="switchTab('colour')">🎨 Colours</button>
+    <button class="tab" id="tabFont" onclick="switchTab('font')">🔤 Font Sizes</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+
+<script>
+// ── Colours ────────────────────────────────────────────────────────────────
+const COLOURS = {
+  'body-bg':         {label:'Background',           def:[10,10,10,255]},
+  'body-text':       {label:'Default text',          def:[0,255,0,255]},
+  'terminal-bg':     {label:'Terminal background',   def:[5,15,5,255]},
+  'terminal-border': {label:'Terminal border',       def:[0,255,0,255]},
+  'prompt':          {label:'Prompt text',           def:[0,102,0,255]},
+  'explainer-text':  {label:'Explainer text',        def:[0,153,0,255]},
+  'explainer-border':{label:'Explainer border',      def:[0,51,0,255]},
+  'link':            {label:'GitHub link',           def:[0,255,0,255]},
+  'label-text':      {label:'Label text',            def:[0,153,0,255]},
+  'field-label':     {label:'Field list — name',     def:[0,204,0,255]},
+  'field-hash':      {label:'Field list — hash',     def:[0,102,0,255]},
+  'add-btn':         {label:'Add button',            def:[0,255,0,255]},
+  'rev-btn':         {label:'Reveal button',         def:[0,255,0,255]},
+  'revealed-text':   {label:'Revealed text (anim)',  def:[0,255,0,255]},
+  'remaining-text':  {label:'Remaining hash (anim)', def:[0,102,0,255]},
+  'status-text':     {label:'Status text',           def:[0,102,0,255]},
+  'status-done':     {label:'Status done text',      def:[0,255,0,255]},
+};
+const cc = {}; // current colours
+for(const k in COLOURS) cc[k]=[...COLOURS[k].def];
+
+// ── Font sizes ─────────────────────────────────────────────────────────────
+const FONTS = {
+  'fs-title':      {label:'Title',              el:()=>document.querySelector('h1'),          prop:'fontSize', def:17, min:10, max:32, unit:'px'},
+  'fs-subtitle':   {label:'Subtitle',           el:()=>document.querySelector('.subtitle'),   prop:'fontSize', def:12, min:8,  max:24, unit:'px'},
+  'fs-prompt':     {label:'Prompt',             el:()=>document.getElementById('c-prompt'),   prop:'fontSize', def:13.6,min:8, max:24, unit:'px'},
+  'fs-explainer':  {label:'Explainer text',     el:()=>document.getElementById('c-explainer'),prop:'fontSize', def:12, min:8,  max:22, unit:'px'},
+  'fs-label':      {label:'Add field label',    el:()=>document.getElementById('c-addlabel'), prop:'fontSize', def:12.8,min:8, max:22, unit:'px'},
+  'fs-input':      {label:'Input text',         el:null,                                       prop:'fontSize', def:13.6,min:8, max:22, unit:'px'},
+  'fs-field-label':{label:'Field list — name',  el:null,                                       prop:'fontSize', def:12, min:8,  max:22, unit:'px'},
+  'fs-field-hash': {label:'Field list — hash',  el:null,                                       prop:'fontSize', def:11.2,min:7, max:22, unit:'px'},
+  'fs-btn':        {label:'Buttons',            el:null,                                       prop:'fontSize', def:13.6,min:8, max:22, unit:'px'},
+  'fs-anim':       {label:'Animation text',     el:null,                                       prop:'fontSize', def:13.1,min:8, max:24, unit:'px'},
+  'fs-status':     {label:'Status text',        el:()=>document.getElementById('status'),     prop:'fontSize', def:12, min:8,  max:22, unit:'px'},
+};
+const fc = {}; // current font sizes
+for(const k in FONTS) fc[k]=FONTS[k].def;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function rgba(arr){return `rgba(${arr[0]},${arr[1]},${arr[2]},${(arr[3]/255).toFixed(3)})`;}
+function toHex(arr){return '#'+arr.slice(0,3).map(v=>v.toString(16).padStart(2,'0')).join('')+(arr[3]<255?arr[3].toString(16).padStart(2,'0'):'');}
+function px(k){return fc[k]+'px';}
+
+function applyColour(k){
+  const v=rgba(cc[k]);
+  const el=id=>document.getElementById(id);
+  const qs=s=>document.querySelectorAll(s);
+  switch(k){
+    case 'body-bg':    document.body.style.backgroundColor=v; break;
+    case 'body-text':  document.body.style.color=v; break;
+    case 'terminal-bg':el('terminal').style.backgroundColor=v; break;
+    case 'terminal-border':el('terminal').style.borderColor=v; el('settingsPanel').style.borderColor=v; el('settingsBtn').style.borderColor=v; break;
+    case 'prompt':     el('c-prompt').style.color=v; break;
+    case 'explainer-text': el('c-explainer').style.color=v; break;
+    case 'explainer-border': el('c-explainer').style.borderColor=v; break;
+    case 'link':       el('c-link').style.color=v; break;
+    case 'label-text': el('c-addlabel').style.color=v; break;
+    case 'field-label':qs('.fi-label').forEach(e=>e.style.color=v); break;
+    case 'field-hash': qs('.fi-hash').forEach(e=>e.style.color=v); break;
+    case 'add-btn':    el('c-addbtn').style.color=v; el('c-addbtn').style.borderColor=v; break;
+    case 'rev-btn':    el('c-revbtn').style.color=v; el('c-revbtn').style.borderColor=v; break;
+    case 'revealed-text': qs('.revealed').forEach(e=>{e.style.color=v;e.style.textShadow=`0 0 6px ${v}`;}); break;
+    case 'remaining-text':qs('.remaining').forEach(e=>e.style.color=v); break;
+    case 'status-text':
+    case 'status-done':break; // applied dynamically
+  }
+  // keep settings panel text readable
+  el('settingsBtn').style.color=rgba(cc['body-text']);
+}
+
+function applyFont(k){
+  const v=fc[k]+'px';
+  const qs=s=>document.querySelectorAll(s);
+  switch(k){
+    case 'fs-title':       document.querySelector('h1').style.fontSize=v; break;
+    case 'fs-subtitle':    document.querySelector('.subtitle').style.fontSize=v; break;
+    case 'fs-prompt':      document.getElementById('c-prompt').style.fontSize=v; break;
+    case 'fs-explainer':   document.getElementById('c-explainer').style.fontSize=v; break;
+    case 'fs-label':       document.getElementById('c-addlabel').style.fontSize=v; break;
+    case 'fs-input':       qs('input[type=text]').forEach(e=>e.style.fontSize=v); break;
+    case 'fs-field-label': qs('.fi-label').forEach(e=>e.style.fontSize=v); break;
+    case 'fs-field-hash':  qs('.fi-hash').forEach(e=>e.style.fontSize=v); break;
+    case 'fs-btn':         qs('.btn').forEach(e=>e.style.fontSize=v); break;
+    case 'fs-anim':        qs('.line').forEach(e=>e.style.fontSize=v); break;
+    case 'fs-status':      document.getElementById('status').style.fontSize=v; break;
+  }
+}
+
+function applyAll(){
+  for(const k in COLOURS) applyColour(k);
+  for(const k in FONTS) applyFont(k);
+}
+
+// ── Panel ──────────────────────────────────────────────────────────────────
+let activeTab='colour', activeColourKey=null;
+
+function togglePanel(){
+  const p=document.getElementById('settingsPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')) renderPanel();
+}
+
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('tabColour').classList.toggle('active',tab==='colour');
+  document.getElementById('tabFont').classList.toggle('active',tab==='font');
+  renderPanel();
+}
+
+function renderPanel(){
+  if(activeTab==='colour') renderColourPanel();
+  else renderFontPanel();
+}
+
+function renderColourPanel(){
+  const rows = Object.entries(COLOURS).map(([k,v])=>`
+    <div class="colour-row ${k===activeColourKey?'active':''}" onclick="selectColour('${k}')">
+      <div class="colour-swatch" style="background:${rgba(cc[k])}"></div>
+      <span class="colour-name">${v.label}</span>
+      <span class="colour-hex">${toHex(cc[k])}</span>
+    </div>`).join('');
+
+  const sliders = `
+    <div class="slider-section" id="sliderSection" style="display:${activeColourKey?'block':'none'}">
+      <h4 id="sliderTitle">${activeColourKey?'Editing: '+COLOURS[activeColourKey].label:'—'}</h4>
+      <div class="slider-row"><span>R</span><input type="range" id="slR" min="0" max="255" oninput="updateColour()"><span class="val" id="slRv">0</span></div>
+      <div class="slider-row"><span>G</span><input type="range" id="slG" min="0" max="255" oninput="updateColour()"><span class="val" id="slGv">0</span></div>
+      <div class="slider-row"><span>B</span><input type="range" id="slB" min="0" max="255" oninput="updateColour()"><span class="val" id="slBv">0</span></div>
+      <div class="slider-row"><span>A</span><input type="range" id="slA" min="0" max="255" oninput="updateColour()"><span class="val" id="slAv">255</span></div>
+      <button class="small-btn" style="color:${rgba(cc['body-text'])};border-color:${rgba(cc['terminal-border'])}" onclick="resetColour()">↺ Reset this colour</button>
+    </div>`;
+
+  document.getElementById('panelBody').innerHTML = `
+    <h3>// COLOURS</h3>${rows}${sliders}
+    <button class="small-btn" style="margin-top:10px;color:${rgba(cc['body-text'])};border-color:${rgba(cc['terminal-border'])}" onclick="resetAllColours()">↺ Reset ALL colours</button>`;
+
+  if(activeColourKey){
+    const [r,g,b,a]=cc[activeColourKey];
+    document.getElementById('slR').value=r; document.getElementById('slRv').textContent=r;
+    document.getElementById('slG').value=g; document.getElementById('slGv').textContent=g;
+    document.getElementById('slB').value=b; document.getElementById('slBv').textContent=b;
+    document.getElementById('slA').value=a; document.getElementById('slAv').textContent=a;
+  }
+}
+
+function renderFontPanel(){
+  const rows = Object.entries(FONTS).map(([k,v])=>`
+    <div class="font-row">
+      <span class="fr-label">${v.label}</span>
+      <div class="font-controls">
+        <button class="sz-btn" onclick="changeFont('${k}',-1)">−</button>
+        <span class="fval" id="fv-${k}">${Math.round(fc[k])}px</span>
+        <button class="sz-btn" onclick="changeFont('${k}',1)">+</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('panelBody').innerHTML = `
+    <h3>// FONT SIZES</h3>${rows}
+    <button class="small-btn" style="margin-top:10px;color:${rgba(cc['body-text'])};border-color:${rgba(cc['terminal-border'])}" onclick="resetAllFonts()">↺ Reset ALL font sizes</button>`;
+}
+
+function selectColour(k){
+  activeColourKey=k;
+  renderColourPanel();
+  // Scroll the slider section into view after render
+  requestAnimationFrame(()=>{
+    const sl=document.getElementById('sliderSection');
+    if(sl) sl.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+}
+
+function updateColour(){
+  if(!activeColourKey) return;
+  const r=+document.getElementById('slR').value, g=+document.getElementById('slG').value;
+  const b=+document.getElementById('slB').value, a=+document.getElementById('slA').value;
+  document.getElementById('slRv').textContent=r; document.getElementById('slGv').textContent=g;
+  document.getElementById('slBv').textContent=b; document.getElementById('slAv').textContent=a;
+  cc[activeColourKey]=[r,g,b,a];
+  applyColour(activeColourKey);
+  // update swatch live
+  const swatches=document.querySelectorAll('.colour-row');
+  const idx=Object.keys(COLOURS).indexOf(activeColourKey);
+  if(swatches[idx]) swatches[idx].querySelector('.colour-swatch').style.background=rgba(cc[activeColourKey]);
+  const hexEls=document.querySelectorAll('.colour-hex');
+  if(hexEls[idx]) hexEls[idx].textContent=toHex(cc[activeColourKey]);
+}
+
+function resetColour(){
+  if(!activeColourKey) return;
+  cc[activeColourKey]=[...COLOURS[activeColourKey].def];
+  applyColour(activeColourKey);
+  renderColourPanel();
+}
+
+function resetAllColours(){
+  for(const k in COLOURS){cc[k]=[...COLOURS[k].def]; applyColour(k);}
+  renderColourPanel();
+}
+
+function changeFont(k, delta){
+  const def=FONTS[k];
+  fc[k]=Math.max(def.min, Math.min(def.max, Math.round(fc[k]+delta)));
+  applyFont(k);
+  const el=document.getElementById('fv-'+k);
+  if(el) el.textContent=fc[k]+'px';
+}
+
+function resetAllFonts(){
+  for(const k in FONTS){fc[k]=FONTS[k].def; applyFont(k);}
+  renderFontPanel();
+}
+
+// ── Fields ─────────────────────────────────────────────────────────────────
+const fields=[];
+
+function addField(){
+  const lbl=document.getElementById('fieldLabel').value.trim();
+  const val=document.getElementById('fieldValue').value.trim();
+  const err=document.getElementById('addErr');
+  if(!lbl||!val){err.textContent='⚠ Both a field name and a value are required.';err.style.display='block';return;}
+  err.style.display='none';
+  fields.push({label:lbl,value:val,hash:syncSHA256(val)});
+  document.getElementById('fieldLabel').value='';
+  document.getElementById('fieldValue').value='';
+  renderFields();
+}
+
+function removeField(i){fields.splice(i,1);renderFields();}
+
+function renderFields(){
+  const el=document.getElementById('fieldsList');
+  if(!fields.length){el.innerHTML=`<div class="empty-note" style="font-size:${px('fs-field-hash')};color:${rgba(cc['field-hash'])}">No fields added yet.</div>`;return;}
+  el.innerHTML=fields.map((f,i)=>`
+    <div class="field-item">
+      <span class="fi-label" style="color:${rgba(cc['field-label'])};font-size:${px('fs-field-label')}">[${f.label}]</span>
+      <span class="fi-hash" style="color:${rgba(cc['field-hash'])};font-size:${px('fs-field-hash')}">${f.hash.substring(0,28)}…</span>
+      <button class="rm" onclick="removeField(${i})">✕</button>
+    </div>`).join('');
+}
+renderFields();
+
+document.getElementById('fieldLabel').addEventListener('input',()=>clamp('fieldLabel',20));
+document.getElementById('fieldValue').addEventListener('input',()=>clamp('fieldValue',30));
+function clamp(id,max){const e=document.getElementById(id);if(e.value.length>max)e.value=e.value.substring(0,max);}
+
+// ── Animation ──────────────────────────────────────────────────────────────
+async function startReveal(){
+  const warn=document.getElementById('revealWarn');
+  if(!fields.length){warn.textContent='⚠ Add at least one field before revealing.';warn.style.display='block';return;}
+  warn.style.display='none';
+  const out=document.getElementById('output'),linesEl=document.getElementById('lines'),statusEl=document.getElementById('status');
+  out.style.display='block'; linesEl.innerHTML=''; statusEl.textContent=''; statusEl.className='status';
+  statusEl.style.color=rgba(cc['status-text']); statusEl.style.fontSize=px('fs-status');
+  statusEl.textContent='> Fetching encrypted records…'; await sleep(600);
+  statusEl.textContent='> Key verified. Beginning decryption stream…'; await sleep(500);
+  for(let fi=0;fi<fields.length;fi++){
+    const f=fields[fi];
+    const lineEl=document.createElement('div'); lineEl.className='line';
+    lineEl.style.fontSize=px('fs-anim');
+    lineEl.innerHTML=`<span style="color:${rgba(cc['prompt'])}">[${f.label}]: </span><span id="val${fi}" class="remaining" style="color:${rgba(cc['remaining-text'])}">${f.hash}</span>`;
+    linesEl.appendChild(lineEl);
+    await sleep(300);
+    await animateReveal(f.hash,f.value,`val${fi}`);
+    await sleep(200);
+  }
+  statusEl.textContent='> DECRYPTION COMPLETE. All fields revealed.';
+  statusEl.style.color=rgba(cc['status-done']);
+}
+
+function animateReveal(hash,plain,elId){
+  return new Promise(resolve=>{
+    const el=document.getElementById(elId);
+    const DURATION=5000,TICK=40,total=DURATION/TICK;
+    const chars='0123456789abcdef';
+    let tick=0;
+    const rv=rgba(cc['revealed-text']), rm=rgba(cc['remaining-text']);
+    const iv=setInterval(()=>{
+      const prog=tick/total, rc=Math.floor(prog*plain.length);
+      if(tick>=total||rc>=plain.length){
+        el.innerHTML=`<span class="revealed" style="color:${rv};text-shadow:0 0 6px ${rv}">${plain}</span>`;
+        clearInterval(iv); resolve(); return;
+      }
+      const rev=plain.substring(0,rc);
+      const remLen=hash.length-Math.floor(prog*hash.length);
+      const scr=Array.from({length:remLen},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+      el.innerHTML=`<span class="revealed" style="color:${rv};text-shadow:0 0 6px ${rv}">${rev}</span><span class="remaining" style="color:${rm}">${scr}</span>`;
+      tick++;
+    },TICK);
+  });
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── SHA-256 ────────────────────────────────────────────────────────────────
+function syncSHA256(msg){
+  function rr(v,a){return(v>>>a)|(v<<(32-a));}
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const bytes=new TextEncoder().encode(msg);
+  const l=bytes.length,bitLen=l*8,padLen=((l%64<56)?56:120)-(l%64);
+  const padded=new Uint8Array(l+padLen+8);
+  padded.set(bytes);padded[l]=0x80;
+  const dv=new DataView(padded.buffer);
+  dv.setUint32(padded.length-4,bitLen&0xffffffff,false);
+  for(let o=0;o<padded.length;o+=64){
+    const w=new Uint32Array(64);
+    for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4,false);
+    for(let i=16;i<64;i++){
+      const s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3);
+      const s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
+    }
+    let [a,b,c,d,e,f,g,h]=[...H];
+    for(let i=0;i<64;i++){
+      const S1=rr(e,6)^rr(e,11)^rr(e,25),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[i]+w[i])|0;
+      const S0=rr(a,2)^rr(a,13)^rr(a,22),maj=(a&b)^(a&c)^(b&c),t2=(S0+maj)|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+  }
+  return H.map(v=>v.toString(16).padStart(8,'0')).join('');
+}
+
+applyAll();
+</script>
+</body>
+</html>
