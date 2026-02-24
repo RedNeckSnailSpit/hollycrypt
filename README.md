@@ -27,7 +27,7 @@ Just drop `index.html` somewhere and open it. That's it.
 ```bash
 git clone https://github.com/RedNeckSnailSpit/hollycrypt.git
 cd hollycrypt
-# Open index.html in your browser
+# Open index.htm in your browser
 ```
 
 Or serve it:
@@ -53,8 +53,7 @@ hollycrypt is the visual layer for that moment. Plug in your own crypto backend.
 
 | File | Description |
 |------|-------------|
-| `index.html` | The demo itself |
-| `redirect.php` | Drop this in place of an old file to redirect to the demo |
+| `index.htm` | The demo itself |
 | `README.md` | You're reading it |
 | `LICENSE` | Dual license — GPL v3 for non-commercial, commercial license required for for-profit use |
 
